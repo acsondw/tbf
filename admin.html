@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Moderação</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+	
+        body { font-family: Arial, sans-serif; background: #f5f0fa; padding: 20px; max-width: 600px; margin: 0 auto; }
+        h1 { color: #4a148c; }
+        .controls { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(74, 20, 140, 0.1); margin-bottom: 20px; display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px; font-size: 16px; border: 1px solid #ce93d8; border-radius: 4px; outline: none; }
+        input:focus { border-color: #7b1fa2; }
+        button { padding: 12px 20px; font-size: 16px; background: #7b1fa2; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #4a148c; }
+        .list-item { background: #fff; padding: 15px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid #ab47bc; }
+        .btn-delete { background: #dc3545; padding: 8px 15px; }
+        .btn-delete:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+    <h1>⚙️ Administração de Cabines</h1>
+    <div class="controls">
+        <input type="text" id="cabinName" placeholder="Nome da cabine (ex: Q1)" onkeypress="if(event.key === 'Enter') addCabin()">
+        <button onclick="addCabin()">Adicionar</button>
+    </div>
+    <div id="adminList">Carregando cabines...</div>
+
+    <script>
+        // COLOQUE SUAS CHAVES AQUI
+        const SUPABASE_URL = 'https://onsermlkgiuzgegwhmly.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uc2VybWxrZ2l1emdlZ3dobWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5NDA2MjYsImV4cCI6MjA4NzUxNjYyNn0.Mspr8kuF_Ay4i8IF2bFO-mghAas8BzvZN1HSZ5q88J4';
+        
+        // MUDANÇA AQUI: alteramos o nome para supabaseClient
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let cabins = [];
+
+        async function fetchCabins() {
+            const { data, error } = await supabaseClient.from('cabins').select('*').order('created_at', { ascending: true });
+            if (error) console.error("Erro ao buscar:", error);
+            else {
+                cabins = data;
+                renderAdmin();
+            }
+        }
+
+        function renderAdmin() {
+            const list = document.getElementById('adminList');
+            list.innerHTML = '';
+            if(cabins.length === 0) list.innerHTML = '<p>Nenhuma cabine cadastrada.</p>';
+            
+            cabins.forEach((cabin) => {
+                let statusText = cabin.status.toUpperCase();
+                list.innerHTML += `
+                    <div class="list-item">
+                        <strong>${cabin.name}</strong> 
+                        <span style="color: #666; font-size: 14px;">(Status: ${statusText})</span>
+                        <button class="btn-delete" onclick="removeCabin('${cabin.id}', '${cabin.name}')">Remover</button>
+                    </div>
+                `;
+            });
+        }
+
+        async function addCabin() {
+            const input = document.getElementById('cabinName');
+            const name = input.value.trim();
+            if (name !== '') {
+                const { error } = await supabaseClient.from('cabins').insert([{ name: name, status: 'livre' }]);
+                if (error) alert("Erro ao adicionar: " + error.message);
+                else input.value = '';
+            }
+        }
+
+        async function removeCabin(id, name) {
+            if (confirm(`Remover a cabine ${name}?`)) {
+                const { error } = await supabaseClient.from('cabins').delete().eq('id', id);
+                if (error) alert("Erro ao remover: " + error.message);
+            }
+        }
+
+        // Inscreve no canal para escutar mudanças em tempo real
+        supabaseClient.channel('custom-all-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'cabins' }, payload => {
+                fetchCabins();
+            })
+            .subscribe();
+
+        fetchCabins();
+    </script>
+</body>
+</html>

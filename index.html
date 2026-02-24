@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Moderação</title>
+    <style>
+		.logo { 
+			max-width: 250px; /* Você pode aumentar ou diminuir esse valor */
+			height: auto; 
+			margin-bottom: 30px; 
+		}
+	
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f5f0fa; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        h1 { color: #4a148c; margin-bottom: 40px; text-align: center; }
+        .menu { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 300px; }
+        a {
+            background: #7b1fa2;
+            color: white;
+            text-decoration: none;
+            padding: 15px 20px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.3s, transform 0.1s;
+        }
+        a:hover { background: #4a148c; }
+        a:active { transform: scale(0.95); }
+        .admin-link { background: #333; }
+        .admin-link:hover { background: #000; }
+    </style>
+</head>
+<body>
+
+    <img src="logotbf2026.svg" alt="Logo TBF 2026" class="logo">
+    
+    <div class="menu">
+        <a href="fiscais.html">📱 Tela dos Fiscais</a>
+        <a href="admin.html" class="admin-link">⚙️ Painel Admin</a>
+    </div>
+
+</body>
+</html>

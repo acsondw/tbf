@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Controle de Fiscais</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+		.logo { 
+			max-width: 280px; /* Um pouco menor para sobrar espaço na tela touch */
+			height: auto; 
+			display: block; 
+			margin: 0 auto 20px auto; 
+		}
+        body { font-family: Arial, sans-serif; background: #f5f0fa; margin: 0; padding: 15px; }
+        h1 { text-align: center; color: #4a148c; font-size: 22px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
+        
+        .cabin {
+            border-radius: 12px; color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 120px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            user-select: none; -webkit-user-select: none; touch-action: none; cursor: pointer; transition: transform 0.1s, filter 0.2s;
+        }
+        .cabin:active { transform: scale(0.95); filter: brightness(0.9); }
+        .cabin h2 { margin: 0; font-size: 28px; pointer-events: none; }
+        .cabin p { margin: 5px 0 0 0; font-size: 14px; font-weight: bold; pointer-events: none; text-transform: uppercase; }
+
+        .livre { background: #2ecc71; }
+        .ocupada { background: #e74c3c; }
+        .finalizada { background: #95a5a6; }
+    </style>
+</head>
+<body>
+	<img src="logotbf2026.svg" alt="Logo TBF 2026" class="logo">
+    <h1>Moderação</h1>
+    <div class="grid" id="fiscaisGrid">Carregando...</div>
+
+    <script>
+        // COLOQUE SUAS CHAVES AQUI
+        const SUPABASE_URL = 'https://onsermlkgiuzgegwhmly.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uc2VybWxrZ2l1emdlZ3dobWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5NDA2MjYsImV4cCI6MjA4NzUxNjYyNn0.Mspr8kuF_Ay4i8IF2bFO-mghAas8BzvZN1HSZ5q88J4';
+        
+        // MUDANÇA AQUI: alteramos o nome para supabaseClient
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let cabins = [];
+
+        async function fetchCabins() {
+            const { data, error } = await supabaseClient.from('cabins').select('*').order('created_at', { ascending: true });
+            if (error) console.error("Erro ao buscar:", error);
+            else {
+                cabins = data;
+                renderFiscais();
+            }
+        }
+
+        async function updateStatus(id, newStatus) {
+            const { error } = await supabaseClient.from('cabins').update({ status: newStatus }).eq('id', id);
+            if(error) console.error("Erro ao atualizar:", error);
+        }
+
+        function renderFiscais() {
+            const grid = document.getElementById('fiscaisGrid');
+            grid.innerHTML = '';
+
+            cabins.forEach((cabin) => {
+                const div = document.createElement('div');
+                div.className = `cabin ${cabin.status}`;
+                
+                let statusText = cabin.status === 'livre' ? 'Livre' : 
+                                 cabin.status === 'ocupada' ? 'Ocupada' : 'Finalizada';
+
+                div.innerHTML = `<h2>${cabin.name}</h2><p>${statusText}</p>`;
+                div.oncontextmenu = (e) => { e.preventDefault(); return false; };
+
+                let pressTimer;
+                let isLongPress = false;
+
+                div.onpointerdown = (e) => {
+                    e.preventDefault();
+                    isLongPress = false;
+                    pressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        updateStatus(cabin.id, 'finalizada');
+                        if(navigator.vibrate) navigator.vibrate(100); 
+                    }, 800);
+                };
+
+                div.onpointerup = (e) => {
+                    e.preventDefault();
+                    clearTimeout(pressTimer);
+                    
+                    if (!isLongPress) {
+                        let nextStatus = 'livre';
+                        if (cabin.status === 'livre') nextStatus = 'ocupada';
+                        else if (cabin.status === 'ocupada') nextStatus = 'livre';
+                        else if (cabin.status === 'finalizada') nextStatus = 'livre'; 
+                        
+                        updateStatus(cabin.id, nextStatus);
+                    }
+                };
+
+                div.onpointerleave = () => clearTimeout(pressTimer);
+                grid.appendChild(div);
+            });
+        }
+
+        // Escuta as mudanças do banco em tempo real
+        supabaseClient.channel('custom-all-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'cabins' }, payload => {
+                fetchCabins();
+            })
+            .subscribe();
+
+        fetchCabins();
+    </script>
+</body>
+</html>
