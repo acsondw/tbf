@@ -122,16 +122,19 @@
             const grid = document.getElementById('fiscaisGrid');
             grid.innerHTML = '';
 
-            cabins.forEach((cabin) => {
+            cabins.forEach((cabin, index) => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'cabin-wrapper';
+                
+                // 2. Criamos o nome do arquivo somando 1 ao index (c1.jpg, c2.jpg...)
+                const nomeDaImagem = `c${index + 1}.jpg`;
                 
                 let statusText = cabin.status === 'livre' ? 'Livre' : 
                                  cabin.status === 'ocupada' ? 'Ocupada' : 'Finalizada';
 
-                // Se a foto Q1.jpg não existir, a tag de erro oculta a imagem e mostra o fundo roxo
+                // 3. Trocamos a variável na tag img
                 wrapper.innerHTML = `
-                    <img src="${cabin.name}.jpg" alt="Prof ${cabin.name}" class="teacher-photo" onerror="this.style.display='none'">
+                    <img src="${nomeDaImagem}" alt="Prof ${cabin.name}" class="teacher-photo" onerror="this.style.display='none'">
                     <div class="cabin-status ${cabin.status}">
                         <h2>${cabin.name}</h2>
                         <p>${statusText}</p>
