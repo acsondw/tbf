@@ -6,39 +6,94 @@
     <title>Controle de Fiscais</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-		.logo { 
-			max-width: 280px; /* Um pouco menor para sobrar espaço na tela touch */
-			height: auto; 
-			display: block; 
-			margin: 0 auto 20px auto; 
-		}
-        body { font-family: Arial, sans-serif; background: #f5f0fa; margin: 0; padding: 15px; }
-        h1 { text-align: center; color: #4a148c; font-size: 22px; margin-bottom: 20px; }
-        .grid { 
-    display: flex; 
-    flex-wrap: wrap; 
-    justify-content: center; /* É esta linha que puxa tudo para o centro */
-    gap: 15px; 
-    margin: 0 auto;
-    max-width: 800px; /* Mantém o design bonito mesmo se aberto em telas maiores */
-}
-        
-        .cabin {
-            border-radius: 12px; color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 120px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            user-select: none; -webkit-user-select: none; touch-action: none; cursor: pointer; transition: transform 0.1s, filter 0.2s;
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f5f0fa; 
+            margin: 0; 
+            padding: 15px; 
         }
-        .cabin:active { transform: scale(0.95); filter: brightness(0.9); }
-        .cabin h2 { margin: 0; font-size: 28px; pointer-events: none; }
-        .cabin p { margin: 5px 0 0 0; font-size: 14px; font-weight: bold; pointer-events: none; text-transform: uppercase; }
+        
+        /* Estilo da Logo */
+        .logo { 
+            max-width: 250px; 
+            height: auto; 
+            display: block; 
+            margin: 0 auto 20px auto; 
+        }
 
+        /* Nova Grade Centralizada (Flexbox) */
+        .grid { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 30px; 
+            margin: 0 auto;
+            max-width: 800px;
+        }
+        
+        /* O "Cartão" Principal da Cabine */
+        .cabin-wrapper {
+            position: relative;
+            width: 200px; 
+            flex-grow: 1; 
+            max-width: 220px; 
+            height: 180px; /* Mais alto para caber o rosto do professor */
+            border-radius: 12px;
+            overflow: hidden; /* Corta a foto para não vazar pelas bordas arredondadas */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            background-color: #ce93d8; /* Fundo roxo caso a foto não exista */
+            user-select: none; 
+            -webkit-user-select: none; 
+            touch-action: none; 
+            cursor: pointer; 
+            transition: transform 0.1s, filter 0.2s;
+        }
+        
+        .cabin-wrapper:active { transform: scale(0.95); filter: brightness(0.9); }
+        
+        /* A Foto do Professor ao fundo */
+        .teacher-photo {
+            position: absolute;
+			left: 0;
+			right: 0;
+			margin: 0 auto;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Preenche sem achatar a imagem */
+            object-position: top; /* Foca na parte de cima (rosto) */
+            z-index: 0;
+			object-position: center -10%;
+        }
+
+        /* O Botão de Status que fica por cima da parte de baixo */
+        .cabin-status {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 55%; /* Cobre os 55% de baixo, deixa 45% do rosto livre no topo */
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            /* Um leve sombreamento para o texto não sumir */
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.15); 
+        }
+
+        .cabin-status h2 { margin: 0; font-size: 28px; pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .cabin-status p { margin: 5px 0 0 0; font-size: 14px; font-weight: bold; pointer-events: none; text-transform: uppercase; }
+
+        /* Cores dos status mantidas para visibilidade rápida */
         .livre { background: #2ecc71; }
         .ocupada { background: #e74c3c; }
         .finalizada { background: #95a5a6; }
     </style>
 </head>
 <body>
-	<img src="logotbf2026.svg" alt="Logo TBF 2026" class="logo">
-    <h1>Moderação</h1>
+
+    <img src="logotbf2026.svg" alt="Logo TBF 2026" class="logo">
     <div class="grid" id="fiscaisGrid">Carregando...</div>
 
     <script>
@@ -46,7 +101,6 @@
         const SUPABASE_URL = 'https://onsermlkgiuzgegwhmly.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uc2VybWxrZ2l1emdlZ3dobWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5NDA2MjYsImV4cCI6MjA4NzUxNjYyNn0.Mspr8kuF_Ay4i8IF2bFO-mghAas8BzvZN1HSZ5q88J4';
         
-        // MUDANÇA AQUI: alteramos o nome para supabaseClient
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let cabins = [];
 
@@ -69,19 +123,27 @@
             grid.innerHTML = '';
 
             cabins.forEach((cabin) => {
-                const div = document.createElement('div');
-                div.className = `cabin ${cabin.status}`;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'cabin-wrapper';
                 
                 let statusText = cabin.status === 'livre' ? 'Livre' : 
                                  cabin.status === 'ocupada' ? 'Ocupada' : 'Finalizada';
 
-                div.innerHTML = `<h2>${cabin.name}</h2><p>${statusText}</p>`;
-                div.oncontextmenu = (e) => { e.preventDefault(); return false; };
+                // Se a foto Q1.jpg não existir, a tag de erro oculta a imagem e mostra o fundo roxo
+                wrapper.innerHTML = `
+                    <img src="${cabin.name}.jpg" alt="Prof ${cabin.name}" class="teacher-photo" onerror="this.style.display='none'">
+                    <div class="cabin-status ${cabin.status}">
+                        <h2>${cabin.name}</h2>
+                        <p>${statusText}</p>
+                    </div>
+                `;
+                
+                wrapper.oncontextmenu = (e) => { e.preventDefault(); return false; };
 
                 let pressTimer;
                 let isLongPress = false;
 
-                div.onpointerdown = (e) => {
+                wrapper.onpointerdown = (e) => {
                     e.preventDefault();
                     isLongPress = false;
                     pressTimer = setTimeout(() => {
@@ -91,7 +153,7 @@
                     }, 800);
                 };
 
-                div.onpointerup = (e) => {
+                wrapper.onpointerup = (e) => {
                     e.preventDefault();
                     clearTimeout(pressTimer);
                     
@@ -105,12 +167,11 @@
                     }
                 };
 
-                div.onpointerleave = () => clearTimeout(pressTimer);
-                grid.appendChild(div);
+                wrapper.onpointerleave = () => clearTimeout(pressTimer);
+                grid.appendChild(wrapper);
             });
         }
 
-        // Escuta as mudanças do banco em tempo real
         supabaseClient.channel('custom-all-channel')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'cabins' }, payload => {
                 fetchCabins();
@@ -120,5 +181,4 @@
         fetchCabins();
     </script>
 </body>
-
 </html>
