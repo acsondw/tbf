@@ -14,7 +14,14 @@
 		}
         body { font-family: Arial, sans-serif; background: #f5f0fa; margin: 0; padding: 15px; }
         h1 { text-align: center; color: #4a148c; font-size: 22px; margin-bottom: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
+        .grid { 
+    display: flex; 
+    flex-wrap: wrap; 
+    justify-content: center; /* É esta linha que puxa tudo para o centro */
+    gap: 15px; 
+    margin: 0 auto;
+    max-width: 800px; /* Mantém o design bonito mesmo se aberto em telas maiores */
+}
         
         .cabin {
             border-radius: 12px; color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 120px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
@@ -113,4 +120,5 @@
         fetchCabins();
     </script>
 </body>
+
 </html>
